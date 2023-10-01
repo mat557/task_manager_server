@@ -85,7 +85,7 @@ const updateUserControllers = async(req,res) =>{
             setStatus = user.status
         }
 
-        
+
         const updateDoc = {
             $set: {
                 email : email,

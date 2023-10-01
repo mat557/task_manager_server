@@ -9,7 +9,7 @@ const getSingleTask = async(req,res) =>{
         const db = getDb()
         const id = req.params.id
 
-        const query = new ObjectId(id)
+        const query = {_id : new ObjectId(id)}
         const task = await db.collection('tasks').findOne(query)
 
         if(!task){
@@ -20,7 +20,7 @@ const getSingleTask = async(req,res) =>{
         }
 
         res.status(200).json({
-            user,
+            task,
             message: 'Task found successfully'
         })
 
@@ -34,17 +34,17 @@ const getSingleTask = async(req,res) =>{
 const getAllTask = async(req,res) =>{
     try{
         const db = getDb()
-        const task = await db.collection('tasks').find().toArray()
+        const task = await db.collection('tasks').find({}).toArray()
 
         if(!task.length){
             return res.status(400).json({
-                user,
+                task,
                 message: 'No task found!'
             })
         }
 
         res.status(200).json({
-            user,
+            task,
             message: 'Tasks found successfully!'
         })
     }catch(err){
@@ -107,7 +107,7 @@ const updateTask = async(req,res) =>{
         const { id , creator , task_desc , deadline , assigned_to , creator_role , isFinished , task_type , isAccepted } = req.body
 
         
-        const query = {_id :new ObjectId(id)}
+        const query = {_id : new ObjectId(id)}
 
         const isMatched = await db.collection('tasks').findOne(query)
         const date = new Date()
@@ -159,11 +159,11 @@ const deleteTask = async(req,res) =>{
     try{
         const db = getDb()
         const id = req.params.id
-
-        const query = { _id : ObjectId(id)}
+        
+        const query = { _id :new ObjectId(id)}
 
         const task = await db.collection('tasks').findOne(query)
-
+        
         if(!task){
             return res.status(404).json({
                 user,
@@ -171,8 +171,8 @@ const deleteTask = async(req,res) =>{
             })
         }
 
-        const delete_response = await db.collection('task').deleteOne(query)
-
+        const delete_response = await db.collection('tasks').deleteOne(query)
+        
         res.status(200).json({
             delete_response,
             message: 'Delete successfull.'
@@ -184,18 +184,18 @@ const deleteTask = async(req,res) =>{
 
 
 //patch request to update
-const assignTask = async(req,res) =>{
+const recieveConfirmation = async(req,res) =>{
     try{
         const db = getDb()
         const { id , isAccepted } = req.body
-
-        if( !id || !Boolean(isAccepted) ){
+        
+        if( !id || isAccepted === '' ){
             return res.status(403).json({
                 message : 'Invalid task id or acquired field is empty'
             })
         }
 
-        const query = { _id : ObjectId(id)}
+        const query = { _id : new ObjectId(id)}
         const task = await db.collection('tasks').findOne(query)
 
         if( !task ){
@@ -236,5 +236,5 @@ module.exports = {
     updateTask,
     getSingleTask,
     deleteTask,
-    assignTask
+    recieveConfirmation
 }
