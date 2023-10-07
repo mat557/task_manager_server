@@ -6,9 +6,9 @@ const jwt = require('jsonwebtoken');
 const createUserController = async (req,res) =>{
     try{
         const db = getDb()
-        const email = req.params.email;
-
-        if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        const { email , name , password , number } = req.body
+        
+        if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)){
             return res.status(400).json({
               message: 'Invalid email format!',
             });
@@ -28,8 +28,7 @@ const createUserController = async (req,res) =>{
             })
         }
 
-        const { name , password , number } = req.body
-        
+
         if(!name || !password || !number){
             return res.status(404).json({ 
                 message: 'No missing field allowed!'
@@ -61,23 +60,29 @@ const createUserController = async (req,res) =>{
           { expiresIn: '1h' }
         );
 
+        const refresh_token = jwt.sign({
+            data: jwt_user_data
+          }, 
+          process.env.ACCESS_TOKEN_SECRET, 
+          { expiresIn: '1h' }
+        );
+
         
         const response = await db.collection('users').insertOne(user_doc)
-        
-        res.cookie('token',
-            access_token,
-        { 
-            maxAge: 900000, 
-            httpOnly: true ,
-            sameSite: 'None', 
-            secure: true
+
+        res.cookie('refresh_token', refresh_token,{
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'None',  
+            maxAge: 7 * 24 * 60 * 60 * 1000
         })
 
         res.status(200).json({ 
-            response , 
-            // access_token
+            response ,
+            access_token,
+            refresh_token
         })
-        
+
     }catch(err){
         console.log(err)
     }
@@ -89,6 +94,7 @@ const loginUserControllers = async (req,res) =>{
     try{
         const db = getDb()
         const { email , password } = req.body
+        console.log(req.body)
 
         if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
             return res.status(400).json({
@@ -111,7 +117,7 @@ const loginUserControllers = async (req,res) =>{
 
         if(!matched){
             return res.status(403).json({ 
-                message : 'Invalid username or password!',
+                message : 'Invalid email or password!',
                 suggest : 'Please try again or create account.'
             })
         }
@@ -120,6 +126,12 @@ const loginUserControllers = async (req,res) =>{
             email:email,
             roles: user.roles
         }
+
+        const refresh_token = jwt.sign({
+            data: jwt_user_data
+          }, process.env.ACCESS_TOKEN_SECRET, 
+          { expiresIn: '1h' }
+        );
 
         const access_token = jwt.sign({
             data: jwt_user_data
@@ -134,13 +146,14 @@ const loginUserControllers = async (req,res) =>{
             maxAge: 900000, 
             httpOnly: true ,
             sameSite: 'None', 
-            secure: true
+            secure: true,
         })
         
         res.status(200).json({
             message: 'User found!',
             additional : 'Login successfull',
-            // access_token
+            access_token,
+            refresh_token
         })
 
     }catch(err){

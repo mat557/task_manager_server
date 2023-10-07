@@ -5,7 +5,7 @@ const authControllers = require('../controllers/authControllers')
 
 
 //for creating an user and also send jwt token
-router.route('/:email').put(authControllers.createUserController)
+router.route('/new').put(authControllers.createUserController)
 
 // for logging/logout in purpose and also send jwt token
 router.route('/login').post(authControllers.loginUserControllers)

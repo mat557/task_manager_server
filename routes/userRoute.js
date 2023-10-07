@@ -8,6 +8,10 @@ const userControllers = require('../controllers/userControllers')
 
 router.route('/:email')
     .get(userControllers.getSingleUser)
+
+
+router.route('/refresh/:token')
+        .get(userControllers.getSingleUserByToken)
     
 
 

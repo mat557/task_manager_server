@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const { getDb } = require("../utils/dbConnects")
 const bcrypt = require('bcrypt');
 
@@ -22,6 +23,59 @@ const getSingleUser = async(req,res) =>{
         res.status(200).json({
             user,
             message: 'User found successfully'
+        })
+
+    }catch(err){
+        console.log(err)
+    }
+}
+
+
+const getSingleUserByToken = async(req,res) =>{
+    try{
+        const db = getDb()
+        const token = req.params.token
+
+        if(token == null){
+            return res.status(403).json({
+                message : 'Please login or create an account!'
+            })
+        }
+
+
+        var decoded;
+
+        try {
+            decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        } catch (err) {
+            console.error(err);
+            return res.status(401).json({
+                message: 'Invalid token'
+            });
+        }
+
+
+        const query = { email: decoded.data.email}
+        const options = {
+            projection: { password: 0 }
+        }
+
+        const user = await db.collection('users').findOne(query,options)
+        
+        const jwt_user_data = {
+            email: user.email,
+            roles: user.roles ||  []
+        }
+
+        const access_token = jwt.sign({
+            data: jwt_user_data
+          }, process.env.ACCESS_TOKEN_SECRET, 
+          { expiresIn: '1h' }
+        );
+
+        res.status(200).json({
+            user,
+            access_token
         })
 
     }catch(err){
@@ -129,6 +183,7 @@ const deleteUserControllers = async(req,res) =>{
 
 module.exports = {
     getSingleUser,
+    getSingleUserByToken,
     getAllleUser,
     updateUserControllers,
     deleteUserControllers
